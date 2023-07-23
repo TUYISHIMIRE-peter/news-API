@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>News API</title>
+    <!-- Include Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Search input field -->
+        <div class="row">
+
+            <div class="form-group col-md-3">
+                <label for="language-select">Add keyword:</label>
+                <input type="text" class="form-control" id="search-input" placeholder="Search news...">
+            </div>
+            <!-- Filter options -->
+            <div class="form-group col-md-3">
+                <label for="publisher-select">Select Publisher:</label>
+                <select class="form-control" id="publisher-select">
+                    <option value="">All</option>
+                <option value="cnn.com">CNN</option>
+                <option value="bbc.com">BBC</option>
+            </select>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="language-select">Select Language:</label>
+            <select class="form-control" id="language-select">
+                <option value="">All</option>
+                <option value="en">English</option>
+                <option value="fr">French</option>
+                <option value="es">Spanish</option>
+                <!-- Add more language options as needed -->
+            </select>
+        </div>
+    </div>
+        <!-- News cards container -->
+        <div id="news-container" class="row mt-4"></div>
+        <!-- Pagination -->
+        <div class="text-center">
+            <button id="load-more" class="btn btn-primary">Load More</button>
+        </div>
+    </div>
+    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            const baseUrl = 'https://news-api14.p.rapidapi.com/search';
+            const pageSize = 10; // Number of articles per page
+            let currentPage = 1; // Current page of articles
+            let articlesData = []; // Store the fetched articles data
+
+            // Function to fetch data from the API and display it on the page
+            function fetchData() {
+                const searchTerm = $('#search-input').val();
+                const publisher = $('#publisher-select').val();
+                const language = $('#language-select').val();
+
+                const queryParameters = {
+                    q: searchTerm,
+                    country: 'us',
+                    language: language || 'en', // Default to English if no language selected
+                    pageSize: pageSize,
+                    publisher: publisher || 'cnn.com,bbc.com' // Default to CNN and BBC if no publisher selected
+                };
+
+                const queryString = $.param(queryParameters);
+                const apiUrl = `${baseUrl}?${queryString}&page=${currentPage}`;
+
+                const settings = {
+                    async: true,
+                    crossDomain: true,
+                    url: apiUrl,
+                    method: 'GET',
+                    headers: {
+                        'X-RapidAPI-Key': '6185daf0bcmshcc1205453220761p1a0784jsnecf4818d8e83',
+                        'X-RapidAPI-Host': 'news-api14.p.rapidapi.com'
+                    }
+                };
+                
+                $.ajax(settings).done(function(response) {
+                    articlesData = [...articlesData, ...response.articles]; // Accumulate fetched articles
+                    displayNews(articlesData);
+                }).fail(function(jqXHR, textStatus, errorThrown) {
+                    console.error('Error:', errorThrown);
+                });
+            }
+
+            // Function to display the news data on the page
+            function displayNews(articles) {
+                const newsContainer = $('#news-container');
+                let newsHTML = '';
+
+                $.each(articles, function(index, article) {
+                    const title = article.title;
+                    const url = article.url;
+                    const publisherName = article.publisher.name;
+                    const publisherUrl = article.publisher.url;
+
+                    newsHTML += `
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">${title}</h5>
+                                    <p class="card-text">Publisher: <a href="${publisherUrl}" target="_blank">${publisherName}</a></p>
+                                    <a href="${url}" class="btn btn-primary" target="_blank">Read more</a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                newsContainer.html(newsHTML);
+            }
+
+            // Load more articles on button click
+            $('#load-more').on('click', function() {
+                currentPage++; // Move to the next page
+                fetchData();
+            });
+
+            // Fetch data when the page loads
+            fetchData();
+
+            // Search news articles based on user input and filters
+            $('#search-input, #publisher-select, #language-select').on('input change', function() {
+                currentPage = 1; // Reset to the first page when filters change
+                articlesData = []; // Clear the stored articles
+                fetchData();
+            });
+        });
+    </script>
+</body>
+</html>
